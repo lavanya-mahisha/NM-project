@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>File Upload Manager (EMF)</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+
+  :root{
+    --bg1:#071129;
+    --accent1:#7c3aed;
+    --accent2:#06b6d4;
+    --card-radius:12px;
+    --muted: rgba(230,238,248,0.6);
+    --max-width:1100px;
+  }
+  *{box-sizing:border-box;font-family:"Poppins",system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;}
+  html,body{height:100%;margin:0;background: radial-gradient(1200px 600px at 10% 10%, rgba(124,58,237,0.08), transparent), radial-gradient(1000px 600px at 90% 90%, rgba(6,182,212,0.04), transparent), linear-gradient(180deg,#071129 0%, #091124 50%, #061022 100%); color:#e6eef8;}
+  .wrap{max-width:var(--max-width);margin:24px auto;padding:20px;display:grid;gap:18px;}
+
+  /* header */
+  .header{display:flex;align-items:center;justify-content:space-between;padding:14px;border-radius:14px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));box-shadow:0 10px 40px rgba(0,0,0,0.5);}
+  .brand{display:flex;gap:12px;align-items:center;}
+  .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent1),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:700;color:white;}
+  .brand h1{margin:0;font-size:18px;}
+  .brand p{margin:0;font-size:12px;color:var(--muted);}
+
+  /* layout */
+  .main{display:grid;grid-template-columns:320px 1fr;gap:18px;}
+  @media(max-width:880px){.main{grid-template-columns:1fr;}}
+
+  .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:16px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.45);}
+
+  /* left */
+  .profile{display:flex;gap:12px;align-items:center;margin-bottom:12px;}
+  .avatar{width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,var(--accent2),var(--accent1));display:flex;align-items:center;justify-content:center;font-weight:700;color:white;}
+  .userinfo h3{margin:0;font-size:16px;}
+  .userinfo p{margin:0;font-size:13px;color:var(--muted);}
+  .nav{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
+  .nav button{background:none;border:1px solid transparent;color:var(--muted);text-align:left;padding:10px;border-radius:10px;cursor:pointer;font-weight:600;}
+  .nav button.active{background:linear-gradient(90deg, rgba(124,58,237,0.12), rgba(6,182,212,0.06));color:#fff;border:1px solid rgba(255,255,255,0.03);}
+
+  /* upload area */
+  .upload-area{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border-radius:10px;border:1px dashed rgba(255,255,255,0.04);background:rgba(255,255,255,0.01);}
+  .upload-left{flex:1;display:flex;flex-direction:column;gap:6px;min-width:180px;}
+  .glow-btn{background:linear-gradient(90deg,var(--accent1),var(--accent2));color:white;padding:10px 14px;border-radius:10px;border:none;font-weight:700;cursor:pointer;}
+  .progress{height:12px;background:rgba(255,255,255,0.02);border-radius:999px;overflow:hidden;margin-top:10px;}
+  .progress .bar{height:100%;width:0%;background:linear-gradient(90deg,var(--accent2),var(--accent1));transition:width .35s;}
+
+  /* lists */
+  .files-list{margin-top:12px;display:grid;gap:10px;}
+  .file-item{display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:8px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));border:1px solid rgba(255,255,255,0.02);}
+  .file-meta{display:flex;gap:10px;align-items:center;}
+  .file-icon{width:40px;height:40px;border-radius:8px;background:rgba(255,255,255,0.03);display:flex;align-items:center;justify-content:center;font-weight:700;}
+  .file-actions button{margin-left:8px;padding:8px 10px;border-radius:8px;border:none;background:rgba(255,255,255,0.03);color:var(--muted);cursor:pointer}
+
+  /* group list */
+  .group-item{padding:10px;border-radius:8px;background:linear-gradient(180deg, rgba(255,255,255,0.01),rgba(255,255,255,0.005));display:flex;justify-content:space-between;align-items:center;border:1px solid rgba(255,255,255,0.02);}
+
+  /* auth */
+  .auth-card{max-width:420px;margin:auto;padding:16px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));}
+  .form-row{display:flex;flex-direction:column;gap:8px;margin-top:10px;}
+  input,select,textarea{padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:#eaf6ff;outline:none;}
+  small{color:var(--muted);}
+
+  footer{text-align:center;color:var(--muted);margin-top:12px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div class="brand">
+      <div class="logo">FM</div>
+      <div>
+        <h1>File Upload Manager</h1>
+        <p>EMF demo — files stored locally</p>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center">
+      <div id="headerUser">Not signed in</div>
+      <button id="logoutBtn" class="glow-btn" style="display:none;padding:8px 10px">Logout</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- LEFT column -->
+    <div class="card" id="leftCol">
+      <!-- profile / auth area -->
+      <div id="authArea">
+        <div class="auth-card">
+          <h2>Welcome</h2>
+          <p class="small">Enter username & email to continue</p>
+
+          <div class="form-row">
+            <label>Username</label>
+            <input id="inputUsername" type="text" placeholder="Your username">
+            <label>Email</label>
+            <input id="inputEmail" type="email" placeholder="you@example.com">
+            <button id="btnLogin" class="glow-btn">Sign In / Sign Up</button>
+            <small>Tip: same username+email will return you to your data on this browser.</small>
+          </div>
+        </div>
+      </div>
+
+      <div id="profileArea" style="display:none">
+        <div class="profile">
+          <div class="avatar" id="avatarInitial">U</div>
+          <div class="userinfo">
+            <h3 id="uiName">User</h3>
+            <p id="uiEmail">you@example.com</p>
+          </div>
+        </div>
+
+        <div class="stat">
+          <small>Storage used</small>
+          <div style="font-weight:700" id="storageUsedText">0 KB / 100 MB</div>
+        </div>
+
+        <div class="nav" style="margin-top:12px">
+          <button id="navDashboard" class="active">Dashboard</button>
+          <button id="navFiles">My Files</button>
+          <button id="navGroups">Groups</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT column -->
+    <div class="card">
+      <!-- Dashboard -->
+      <div id="dashboardView">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <h2 id="dashTitle">Dashboard</h2>
+            <small id="dashSub">Upload files or open a group to share files</small>
+          </div>
+          <div id="dashStorage" style="text-align:right">
+            <div id="dashUsed">0 KB used</div>
+            <small>Quota: 100 MB</small>
+          </div>
+        </div>
+
+        <div class="upload-area" style="margin-top:16px">
+          <div class="upload-left">
+            <div style="display:flex;gap:8px;align-items:center">
+              <div style="font-weight:700">Upload to: </div>
+              <select id="uploadTarget">
+                <option value="personal">My Files</option>
+              </select>
+            </div>
+            <label class="glow-btn" style="display:inline-block;margin-top:8px;max-width:220px;text-align:center;cursor:pointer;">
+              Choose files
+              <input id="filePicker" type="file" multiple style="display:none">
+            </label>
+            <div class="progress" style="width:100%;margin-top:8px"><div class="bar" id="mainProgress"></div></div>
+          </div>
+
+          <div style="min-width:160px;text-align:right">
+            <div class="small">Max demo quota</div>
+            <div style="font-weight:700" id="quotaText">100 MB</div>
+          </div>
+        </div>
+
+        <div class="files-list" id="recentFiles" style="margin-top:14px">
+          <!-- recent personal files will show here -->
+        </div>
+      </div>
+
+      <!-- Files view -->
+      <div id="filesView" style="display:none">
+        <h2>My Files</h2>
+        <div class="files-list" id="personalFilesList"></div>
+      </div>
+
+      <!-- Groups view -->
+      <div id="groupsView" style="display:none">
+        <h2>Groups</h2>
+
+        <div style="margin-top:8px" class="form-row">
+          <label>Group name</label>
+          <input id="groupNameInput" placeholder="Team A">
+          <label>Members (comma separated username or email)</label>
+          <input id="groupMembersInput" placeholder="alice, bob@example.com">
+          <button id="createGroupBtn" class="glow-btn">Create Group</button>
+        </div>
+
+        <div style="margin-top:12px" id="myGroupsList">
+          <!-- groups listed here -->
+        </div>
+
+        <div id="activeGroupArea" style="display:none;margin-top:12px">
+          <h3 id="activeGroupTitle">Group</h3>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+            <label class="glow-btn">
+              Add files to group
+              <input id="groupFilePicker" type="file" multiple style="display:none">
+            </label>
+            <button id="leaveGroupBtn" class="glow-btn" style="background:#ff6b6b">Leave Group</button>
+          </div>
+          <div class="files-list" id="groupFilesList" style="margin-top:12px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Built for demo — files stored locally on this browser</footer>
+</div>
+
+<script>
+/* -------------------------
+   LocalStorage keys & helpers
+   ------------------------- */
+const USERS_KEY = 'fum_users_v2';     // maps email -> user object
+const CURR_KEY = 'fum_current_v2';    // current user's email
+const STORAGE_QUOTA = 100 * 1024 * 1024; // 100 MB demo quota
+
+function loadUsers(){ return JSON.parse(localStorage.getItem(USERS_KEY) || '{}'); }
+function saveUsers(u){ localStorage.setItem(USERS_KEY, JSON.stringify(u)); }
+function getCurrentEmail(){ return localStorage.getItem(CURR_KEY); }
+function setCurrentEmail(e){ if(e) localStorage.setItem(CURR_KEY, e); else localStorage.removeItem(CURR_KEY); }
+function nowStr(){ return new Date().toLocaleString(); }
+
+/* -------------------------
+   Data model
+   user = {
+     username: "Alice",
+     email: "alice@example.com",
+     files: [{id,name,size,type,dataURL,uploadedAt,uploaderEmail}],
+     groups: [ groupId, ... ]  // groups they created or are member of
+   }
+   group = {
+     id: "g_xxx",
+     name: "Team A",
+     members: ["alice@example.com","bob@example.com","someone"], // strings (email or username token)
+     files: [{id,name,size,type,dataURL,uploadedAt,uploaderEmail}]
+   }
+   Groups are stored inside users map under a special key '__groups' for simplicity
+   ------------------------- */
+
+function loadGroups(){ const u = loadUsers(); return u.__groups || {}; }
+function saveGroups(groups){
+  const u = loadUsers();
+  u.__groups = groups;
+  saveUsers(u);
+}
+
+/* -------------------------
+   Initial UI references
+   ------------------------- */
+const headerUser = document.getElementById('headerUser');
+const logoutBtn = document.getElementById('logoutBtn');
+
+const authArea = document.getElementById('authArea');
+const profileArea = document.getElementById('profileArea');
+const inputUsername = document.getElementById('inputUsername');
+const inputEmail = document.getElementById('inputEmail');
+const btnLogin = document.getElementById('btnLogin');
+
+const avatarInitial = document.getElementById('avatarInitial');
+const uiName = document.getElementById('uiName');
+const uiEmail = document.getElementById('uiEmail');
+const storageUsedText = document.getElementById('storageUsedText');
+const dashUsed = document.getElementById('dashUsed');
+
+const navDashboard = document.getElementById('navDashboard');
+const navFiles = document.getElementById('navFiles');
+const navGroups = document.getElementById('navGroups');
+
+const dashboardView = document.getElementById('dashboardView');
+const filesView = document.getElementById('filesView');
+const groupsView = document.getElementById('groupsView');
+
+const filePicker = document.getElementById('filePicker');
+const uploadTarget = document.getElementById('uploadTarget');
+const mainProgress = document.getElementById('mainProgress');
+const recentFiles = document.getElementById('recentFiles');
+const personalFilesList = document.getElementById('personalFilesList');
+
+const groupNameInput = document.getElementById('groupNameInput');
+const groupMembersInput = document.getElementById('groupMembersInput');
+const createGroupBtn = document.getElementById('createGroupBtn');
+const myGroupsList = document.getElementById('myGroupsList');
+const activeGroupArea = document.getElementById('activeGroupArea');
+const activeGroupTitle = document.getElementById('activeGroupTitle');
+const groupFilePicker = document.getElementById('groupFilePicker');
+const groupFilesList = document.getElementById('groupFilesList');
+const leaveGroupBtn = document.getElementById('leaveGroupBtn');
+
+const quotaText = document.getElementById('quotaText');
+
+/* Prevent Enter from submitting / searching */
+[inputUsername, inputEmail, groupNameInput, groupMembersInput].forEach(inp=>{
+  inp.addEventListener('keydown', e => { if(e.key === 'Enter') e.preventDefault(); });
+});
+
+/* -------------------------
+   Authentication
+   ------------------------- */
+btnLogin.addEventListener('click', () => {
+  const username = (inputUsername.value || '').trim();
+  const email = (inputEmail.value || '').trim().toLowerCase();
+  if(!username || !email){ alert('Enter username and email'); return; }
+
+  const users = loadUsers();
+  if(!users[email]){
+    // create new user
+    users[email] = { username, email, files: [], groups: [] };
+    saveUsers(users);
+  } else {
+    // if username changed, keep username as provided
+    users[email].username = username;
+    saveUsers(users);
+  }
+  setCurrentEmail(email);
+  inputUsername.value=''; inputEmail.value='';
+  renderLoggedIn();
+});
+
+logoutBtn.addEventListener('click', ()=>{
+  setCurrentEmail(null);
+  renderLoggedOut();
+});
+
+/* -------------------------
+   Render functions
+   ------------------------- */
+function renderLoggedOut(){
+  headerUser.textContent = 'Not signed in';
+  logoutBtn.style.display = 'none';
+  authArea.style.display = 'block';
+  profileArea.style.display = 'none';
+  dashboardView.style.display = 'none';
+  filesView.style.display = 'none';
+  groupsView.style.display = 'none';
+  activeGroupArea.style.display = 'none';
+}
+
+function renderLoggedIn(){
+  const email = getCurrentEmail();
+  if(!email) return renderLoggedOut();
+  const users = loadUsers();
+  const user = users[email];
+  if(!user) return renderLoggedOut();
+
+  // header and left profile
+  headerUser.textContent = user.username;
+  logoutBtn.style.display = 'inline-block';
+  authArea.style.display = 'none';
+  profileArea.style.display = 'block';
+  avatarInitial.textContent = (user.username[0] || 'U').toUpperCase();
+  uiName.textContent = user.username;
+  uiEmail.textContent = user.email;
+
+  // upload target: include personal and groups where user is member
+  rebuildUploadTarget();
+
+  // show dashboard by default
+  showSection('dashboard');
+
+  updateStorageUI();
+  renderRecent();
+  renderPersonalFiles();
+  renderMyGroups();
+}
+
+/* -------------------------
+   Storage / files helpers
+   ------------------------- */
+function computeUserUsedBytes(email){
+  const users = loadUsers();
+  const groups = loadGroups();
+  let used = 0;
+  if(users[email] && users[email].files){
+    used += users[email].files.reduce((s,f)=>s + (f.size || 0), 0);
+  }
+  // plus files in groups where this user is member
+  for(const gid in groups){
+    const g = groups[gid];
+    if(g.members && g.members.includes(email)){
+      used += (g.files || []).reduce((s,f)=>s + (f.size || 0), 0);
+    }
+  }
+  return used;
+}
+
+function updateStorageUI(){
+  const email = getCurrentEmail(); if(!email) return;
+  const used = computeUserUsedBytes(email);
+  const usedText = humanReadableBytes(used);
+  storageUsedText.textContent = `${usedText} / 100 MB`;
+  dashUsed.textContent = `${usedText} used`;
+  // update progress bar saturating at 100 MB
+  const percent = Math.min(100, Math.round((used / STORAGE_QUOTA) * 100));
+  mainProgress.style.width = percent + '%';
+}
+
+/* -------------------------
+   Upload target select
+   ------------------------- */
+function rebuildUploadTarget(){
+  uploadTarget.innerHTML = '';
+  const sPersonal = document.createElement('option');
+  sPersonal.value = 'personal';
+  sPersonal.textContent = 'My Files';
+  uploadTarget.appendChild(sPersonal);
+
+  const groups = loadGroups();
+  const email = getCurrentEmail();
+  for(const gid in groups){
+    const g = groups[gid];
+    if(g.members && g.members.includes(email)){
+      const opt = document.createElement('option');
+      opt.value = 'group::' + gid;
+      opt.textContent = 'Group: ' + g.name;
+      uploadTarget.appendChild(opt);
+    }
+  }
+}
+
+/* -------------------------
+   Personal file upload
+   ------------------------- */
+filePicker.addEventListener('change', async (e) => {
+  const files = Array.from(e.target.files || []);
+  if(!files.length) return;
+  const target = uploadTarget.value; // personal or group::id
+
+  const email = getCurrentEmail();
+  const users = loadUsers();
+  const user = users[email];
+
+  for(const f of files){
+    const size = f.size;
+    const used = computeUserUsedBytes(email);
+    if(used + size > STORAGE_QUOTA){ alert('Not enough storage for ' + f.name); continue; }
+
+    const dataURL = await readFileAsDataURL(f);
+    const fileObj = { id: genId(), name: f.name, size: f.size, type: f.type, dataURL, uploadedAt: nowStr(), uploader: email };
+
+    if(target === 'personal'){
+      user.files = user.files || [];
+      user.files.push(fileObj);
+    } else if(target.startsWith('group::')){
+      const gid = target.split('::')[1];
+      const groups = loadGroups();
+      const g = groups[gid];
+      if(!g) { alert('Group not found'); continue; }
+      g.files = g.files || [];
+      g.files.push(fileObj);
+      saveGroups(groups);
+    }
+    saveUsers(users);
+  }
+
+  e.target.value = '';
+  updateStorageUI();
+  renderRecent();
+  renderPersonalFiles();
+  renderGroupFilesIfActive();
+});
+
+/* -------------------------
+   Helper: read file to dataURL
+   ------------------------- */
+function readFileAsDataURL(file){
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = ()=> res(r.result);
+    r.onerror = ()=> rej(r.error);
+    r.readAsDataURL(file);
+  });
+}
+
+/* -------------------------
+   Render recent / personal files
+   ------------------------- */
+function renderRecent(){
+  recentFiles.innerHTML = '';
+  const email = getCurrentEmail();
+  if(!email) return;
+  const users = loadUsers();
+  const user = users[email];
+  const list = (user.files || []).slice().reverse().slice(0,6); // last 6
+  for(const f of list){
+    const div = document.createElement('div');
+    div.className = 'file-item';
+    div.innerHTML = `<div class="file-meta">
+        <div class="file-icon">${getExt(f.name)}</div>
+        <div><strong>${escapeHtml(f.name)}</strong><br><small>${humanReadableBytes(f.size)}</small></div>
+      </div>
+      <div class="file-actions">
+        <button onclick="viewFile('${f.id}', 'personal')">View</button>
+        <button onclick="downloadFile('${f.id}', 'personal')">Download</button>
+        <button onclick="deleteFile('${f.id}', 'personal')" style="color:#ff7b7b">Delete</button>
+      </div>`;
+    recentFiles.appendChild(div);
+  }
+}
+
+function renderPersonalFiles(){
+  personalFilesList.innerHTML = '';
+  const email = getCurrentEmail();
+  if(!email) return;
+  const users = loadUsers();
+  const user = users[email];
+  (user.files || []).forEach(f => {
+    const div = document.createElement('div');
+    div.className = 'file-item';
+    div.innerHTML = `<div class="file-meta">
+        <div class="file-icon">${getExt(f.name)}</div>
+        <div><strong>${escapeHtml(f.name)}</strong><br><small>${humanReadableBytes(f.size)} • ${escapeHtml(f.uploadedAt)}</small></div>
+      </div>
+      <div class="file-actions">
+        <button onclick="viewFile('${f.id}', 'personal')">View</button>
+        <button onclick="downloadFile('${f.id}', 'personal')">Download</button>
+        <button onclick="deleteFile('${f.id}', 'personal')" style="color:#ff7b7b">Delete</button>
+      </div>`;
+    personalFilesList.appendChild(div);
+  });
+}
+
+/* -------------------------
+   File operations (view, download, delete)
+   ------------------------- */
+function findFileById(id, scope){
+  // scope: 'personal' or 'group::<gid>'
+  if(scope === 'personal'){
+    const users = loadUsers(); const email = getCurrentEmail(); const user = users[email];
+    if(!user) return null;
+    return (user.files || []).find(f => f.id === id) || null;
+  } else if(scope.startsWith('group::')){
+    const gid = scope.split('::')[1]; const groups = loadGroups(); const g = groups[gid];
+    if(!g) return null;
+    return (g.files || []).find(f => f.id === id) || null;
+  }
+  return null;
+}
+
+function viewFile(id, scope){
+  const f = findFileById(id, scope);
+  if(!f) return alert('File not found');
+  // open in new tab by using dataURL
+  const w = window.open(f.dataURL, '_blank');
+  if(!w) alert('Popup blocked — allow popups to view file.');
+}
+
+function downloadFile(id, scope){
+  const f = findFileById(id, scope);
+  if(!f) return alert('File not found');
+  const a = document.createElement('a');
+  a.href = f.dataURL;
+  a.download = f.name;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+function deleteFile(id, scope){
+  if(!confirm('Delete this file?')) return;
+  if(scope === 'personal'){
+    const users = loadUsers(); const email = getCurrentEmail(); const user = users[email];
+    user.files = (user.files || []).filter(f => f.id !== id);
+    users[email] = user; saveUsers(users);
+  } else if(scope.startsWith('group::')){
+    const gid = scope.split('::')[1]; const groups = loadGroups(); const g = groups[gid];
+    g.files = (g.files || []).filter(f => f.id !== id);
+    groups[gid] = g; saveGroups(groups);
+  }
+  updateStorageUI(); renderRecent(); renderPersonalFiles(); renderGroupFilesIfActive();
+}
+
+/* -------------------------
+   Groups: create, render, active group, add members, upload to group
+   ------------------------- */
+function genId(){ return 'id_' + Math.random().toString(36).slice(2,10); }
+
+createGroupBtn.addEventListener('click', ()=>{
+  const name = (groupNameInput.value || '').trim();
+  const membersRaw = (groupMembersInput.value || '').trim();
+  if(!name){ alert('Enter group name'); return; }
+  // members: split by comma, trim, convert usernames to emails if possible
+  const tokens = membersRaw ? membersRaw.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  const users = loadUsers();
+  const members = [];
+  // ensure current user is in members
+  const me = getCurrentEmail();
+  if(me) members.push(me);
+
+  for(const t of tokens){
+    // try exact email match
+    if(users[t]){ if(!members.includes(t)) members.push(t); continue; }
+    // try username match
+    const foundEmail = Object.keys(users).find(em => users[em].username.toLowerCase() === t.toLowerCase());
+    if(foundEmail){ if(!members.includes(foundEmail)) members.push(foundEmail); continue; }
+    // otherwise store token as-is (will match when user later signs up with same email or username)
+    if(!members.includes(t)) members.push(t);
+  }
+
+  // create group and store
+  const groups = loadGroups();
+  const gid = genId();
+  groups[gid] = { id: gid, name, members, files: [] };
+  saveGroups(groups);
+
+  // add group id to each listed existing user record (only for existing emails)
+  for(const m of members){
+    const usersObj = loadUsers();
+    if(usersObj[m]){ // m is an email
+      if(!usersObj[m].groups) usersObj[m].groups = [];
+      usersObj[m].groups.push(gid);
+      saveUsers(usersObj);
+    } else {
+      // if m is a username, find their email
+      const found = Object.keys(usersObj).find(em => usersObj[em].username.toLowerCase() === m.toLowerCase());
+      if(found){
+        if(!usersObj[found].groups) usersObj[found].groups = [];
+        usersObj[found].groups.push(gid);
+        saveUsers(usersObj);
+      }
+    }
+  }
+
+  groupNameInput.value=''; groupMembersInput.value='';
+  rebuildUploadTarget();
+  renderMyGroups();
+  alert('Group created: ' + name);
+});
+
+function renderMyGroups(){
+  myGroupsList.innerHTML = '';
+  const groups = loadGroups();
+  const me = getCurrentEmail();
+  for(const gid in groups){
+    const g = groups[gid];
+    // show only groups where current user is a member token (string match)
+    if(!g.members || !g.members.includes(me)) continue;
+    const div = document.createElement('div'); div.className='group-item';
+    const left = document.createElement('div');
+    left.innerHTML = `<strong>${escapeHtml(g.name)}</strong><br><small>Members: ${g.members.map(m=>escapeHtml(displayNameForToken(m))).join(', ')}</small>`;
+    const right = document.createElement('div');
+    const openBtn = document.createElement('button'); openBtn.textContent='Open'; openBtn.className='glow-btn';
+    openBtn.addEventListener('click', ()=> openGroup(gid));
+    const delBtn = document.createElement('button'); delBtn.textContent='Delete'; delBtn.style.marginLeft='8px';
+    delBtn.addEventListener('click', ()=> {
+      if(!confirm('Delete group "'+g.name+'"? This removes group files.')) return;
+      deleteGroup(gid);
+    });
+    right.appendChild(openBtn); right.appendChild(delBtn);
+    div.appendChild(left); div.appendChild(right);
+    myGroupsList.appendChild(div);
+  }
+}
+
+function displayNameForToken(t){
+  const users = loadUsers();
+  if(users[t]) return users[t].username;
+  // search for username match
+  const found = Object.keys(users).find(em => users[em].username.toLowerCase() === (t+'').toLowerCase());
+  if(found) return users[found].username;
+  return t;
+}
+
+function deleteGroup(gid){
+  const groups = loadGroups();
+  const g = groups[gid];
+  delete groups[gid];
+  saveGroups(groups);
+  // remove group id from users who had it
+  const users = loadUsers();
+  for(const em in users){
+    users[em].groups = (users[em].groups || []).filter(x=>x !== gid);
+  }
+  saveUsers(users);
+  rebuildUploadTarget();
+  renderMyGroups();
+  if(activeGroup && activeGroup.id === gid) closeActiveGroup();
+}
+
+let activeGroup = null;
+function openGroup(gid){
+  const groups = loadGroups(); const g = groups[gid];
+  if(!g) return alert('Group not found');
+  const me = getCurrentEmail();
+  if(!g.members.includes(me)) return alert('You are not a member of this group');
+  activeGroup = g;
+  activeGroupArea.style.display = 'block';
+  activeGroupTitle.textContent = g.name;
+  renderGroupFiles(gid);
+  // set upload select to include this group
+  rebuildUploadTarget();
+  // select this group in uploadTarget
+  const optVal = 'group::' + gid;
+  uploadTarget.value = optVal;
+}
+
+function closeActiveGroup(){
+  activeGroup = null;
+  activeGroupArea.style.display = 'none';
+  rebuildUploadTarget();
+}
+
+leaveGroupBtn.addEventListener('click', ()=>{
+  if(!activeGroup) return;
+  const gid = activeGroup.id;
+  const me = getCurrentEmail();
+  const groups = loadGroups();
+  const g = groups[gid];
+  if(!g) return;
+  if(!confirm('Leave group '+g.name+'?')) return;
+  // remove member token equal to current email or username
+  g.members = g.members.filter(m => m !== me && m !== displayNameForToken(me));
+  groups[gid] = g; saveGroups(groups);
+  // remove group id from user record if present
+  const users = loadUsers();
+  if(users[me]) users[me].groups = (users[me].groups || []).filter(x=>x !== gid);
+  saveUsers(users);
+  closeActiveGroup();
+  renderMyGroups();
+  rebuildUploadTarget();
+});
+
+/* group file upload */
+groupFilePicker.addEventListener('change', async (e) => {
+  if(!activeGroup) return alert('Open a group first');
+  const files = Array.from(e.target.files || []);
+  if(!files.length) return;
+  const groups = loadGroups();
+  const g = groups[activeGroup.id];
+  for(const f of files){
+    const dataURL = await readFileAsDataURL(f);
+    const fileObj = { id: genId(), name: f.name, size: f.size, type: f.type, dataURL, uploadedAt: nowStr(), uploader: getCurrentEmail() };
+    g.files = g.files || [];
+    g.files.push(fileObj);
+  }
+  groups[activeGroup.id] = g; saveGroups(groups);
+  e.target.value = '';
+  renderGroupFiles(activeGroup.id);
+  updateStorageUI();
+});
+
+/* render group files for active group */
+function renderGroupFiles(gid){
+  const groups = loadGroups(); const g = groups[gid];
+  if(!g) return;
+  groupFilesList.innerHTML = '';
+  (g.files || []).forEach(f=>{
+    const div = document.createElement('div'); div.className='file-item';
+    div.innerHTML = `<div class="file-meta"><div class="file-icon">${getExt(f.name)}</div>
+      <div><strong>${escapeHtml(f.name)}</strong><br><small>${humanReadableBytes(f.size)} • ${escapeHtml(f.uploadedAt)} • by ${escapeHtml(displayNameForToken(f.uploader || ''))}</small></div></div>
+      <div class="file-actions">
+        <button onclick="viewFile('${f.id}','group::${gid}')">View</button>
+        <button onclick="downloadFile('${f.id}','group::${gid}')">Download</button>
+        <button onclick="deleteFile('${f.id}','group::${gid}')" style="color:#ff7b7b">Delete</button>
+      </div>`;
+    groupFilesList.appendChild(div);
+  });
+}
+
+/* helper to rerender group files if current active group is set */
+function renderGroupFilesIfActive(){ if(activeGroup) renderGroupFiles(activeGroup.id); }
+
+/* -------------------------
+   Helpers & init
+   ------------------------- */
+function humanReadableBytes(bytes){
+  if(!bytes) return '0 KB';
+  const units = ['B','KB','MB','GB'];
+  let i=0; let val = bytes;
+  while(val >= 1024 && i < units.length-1){ val/=1024; i++; }
+  const precision = val >= 10 || i === 0 ? 0 : 2;
+  return val.toFixed(precision) + ' ' + units[i];
+}
+function getExt(name){ return (name.split('.').pop() || '').slice(0,3).toUpperCase() || 'F'; }
+function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* -------------------------
+   Navigation buttons
+   ------------------------- */
+navDashboard.addEventListener('click', ()=> showSection('dashboard'));
+navFiles.addEventListener('click', ()=> showSection('files'));
+navGroups.addEventListener('click', ()=> showSection('groups'));
+
+function showSection(name){
+  dashboardView.style.display = name === 'dashboard' ? 'block' : 'none';
+  filesView.style.display = name === 'files' ? 'block' : 'none';
+  groupsView.style.display = name === 'groups' ? 'block' : 'none';
+  // active group area is separate, keep as is
+  [navDashboard, navFiles, navGroups].forEach(btn => btn.classList.remove('active'));
+  if(name === 'dashboard') navDashboard.classList.add('active');
+  if(name === 'files') navFiles.classList.add('active');
+  if(name === 'groups') navGroups.classList.add('active');
+}
+
+/* -------------------------
+   Render my groups (called earlier but define here)
+   ------------------------- */
+function renderMyGroups(){
+  myGroupsList.innerHTML = '';
+  const groups = loadGroups();
+  const me = getCurrentEmail();
+  for(const gid in groups){
+    const g = groups[gid];
+    if(!g.members || !g.members.includes(me)) continue;
+    const node = document.createElement('div'); node.className = 'group-item';
+    const left = document.createElement('div');
+    left.innerHTML = `<strong>${escapeHtml(g.name)}</strong><br><small>Members: ${g.members.map(m=>escapeHtml(displayNameForToken(m))).join(', ')}</small>`;
+    const right = document.createElement('div');
+    const open = document.createElement('button'); open.className='glow-btn'; open.textContent='Open';
+    open.onclick = ()=> openGroup(gid);
+    const rem = document.createElement('button'); rem.textContent='Remove'; rem.style.marginLeft='8px';
+    rem.onclick = ()=> {
+      if(!confirm('Delete group and its files?')) return;
+      deleteGroup(gid);
+    };
+    right.appendChild(open); right.appendChild(rem);
+    node.appendChild(left); node.appendChild(right);
+    myGroupsList.appendChild(node);
+  }
+}
+
+/* -------------------------
+   Utility: download all initial render & state
+   ------------------------- */
+function initApp(){
+  const savedEmail = getCurrentEmail();
+  if(savedEmail){
+    const users = loadUsers();
+    if(users[savedEmail]){
+      renderLoggedIn();
+      return;
+    }
+  }
+  renderLoggedOut();
+}
+
+initApp();
+
+/* -------------------------
+   Small helper to keep upload target updated when groups change
+   ------------------------- */
+function rebuildUploadTarget(){
+  const sel = uploadTarget;
+  const curVal = sel.value;
+  sel.innerHTML = '';
+  const opt = document.createElement('option'); opt.value='personal'; opt.text='My Files'; sel.appendChild(opt);
+  const groups = loadGroups(); const me = getCurrentEmail();
+  for(const gid in groups){
+    const g = groups[gid];
+    if(g.members && g.members.includes(me)){
+      const o = document.createElement('option'); o.value = 'group::' + gid; o.text = 'Group: ' + g.name;
+      sel.appendChild(o);
+    }
+  }
+  sel.value = curVal && Array.from(sel.options).some(x=>x.value === curVal) ? curVal : 'personal';
+}
+window.rebuildUploadTarget = rebuildUploadTarget;
+
+/* -------------------------
+   End of script
+   ------------------------- */
+</script>
+</body>
+</html>
